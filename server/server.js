@@ -1,17 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
+require('dotenv').config({ path: '../.env' });
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const BUNNY_API_KEY = '5a9d959b-7376-454e-aaae354a596f-88ce-43a5';
-const BUNNY_LIBRARY_ID = '413846';
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
+const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
 // Validação inicial das credenciais
 if (!BUNNY_API_KEY || !BUNNY_LIBRARY_ID) {
   console.error('ERRO: API Key ou Library ID não configurados!');
+  console.error('Por favor, configure as variáveis de ambiente BUNNY_API_KEY e BUNNY_LIBRARY_ID no arquivo .env');
   process.exit(1);
 }
 
