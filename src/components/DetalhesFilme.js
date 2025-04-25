@@ -3,9 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import './DetalhesFilme.css';
 
-const BUNNY_API_KEY = '5a9d959b-7376-454e-aaae354a596f-88ce-43a5';
-const BUNNY_LIBRARY_ID = '413846';
-
 const DetalhesFilme = () => {
   const navigate = useNavigate();
   const { id } = useParams();
