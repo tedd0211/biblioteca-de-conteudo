@@ -1,14 +1,15 @@
 {
-  "name": "biblioteca-conteudos-server",
+  "name": "server-series",
   "version": "1.0.0",
-  "description": "Servidor proxy para API do Bunny",
-  "main": "server.js",
+  "description": "Servidor para streaming de séries",
+  "main": "server-series.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server-series.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "dotenv": "^16.0.3"
   }
 }

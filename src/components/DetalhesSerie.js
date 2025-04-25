@@ -1,33 +1,170 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../config/supabase';
 import './DetalhesSerie.css';
 
 const DetalhesSerie = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [serie, setSerie] = useState(null);
+  const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  const [expandedSeasons, setExpandedSeasons] = useState([1]);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [temporadas, setTemporadas] = useState([]);
+  const [episodios, setEpisodios] = useState([]);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
+
+  useEffect(() => {
+    fetchSerie();
+  }, [id]);
+
+  useEffect(() => {
+    if (serie) {
+      fetchTemporadas();
+    }
+  }, [serie]);
+
+  useEffect(() => {
+    if (selectedSeason) {
+      fetchEpisodios();
+    }
+  }, [selectedSeason]);
+
+  useEffect(() => {
+    if (selectedEpisode && serie?.imdb_id) {
+      fetchVideo();
+    }
+  }, [selectedEpisode, serie?.imdb_id]);
 
   const handleVoltar = () => {
     navigate(-1);
   };
 
-  const handleDownload = () => {
-    // Função será implementada posteriormente
-  };
-
-  // Dados mockados - em uma aplicação real, isso viria de uma API
-  const series = {
-    2: {
-      titulo: 'Breaking Bad',
-      ano: 2008,
-      avaliacao: 9.5,
-      capa: 'https://m.media-amazon.com/images/M/MV5BMTJiMzgwZTgzYjQtYjQwYjYyYjRkY2E4MDQ0YjE5YzYyYjRkY2E4MDQ0YjE5XkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg',
-      sinopse: 'Um professor de química do ensino médio com câncer terminal se junta a um ex-aluno para fabricar e vender metanfetamina para garantir o futuro de sua família.',
-      temporadas: 5,
-      episodios: 62
+  const handleDownload = async () => {
+    const episodioAtual = episodios.find(ep => ep.numero === selectedEpisode);
+    if (episodioAtual?.url_video) {
+      try {
+        await navigator.clipboard.writeText(episodioAtual.url_video);
+        setShowCopiedMessage(true);
+        setTimeout(() => setShowCopiedMessage(false), 2000);
+      } catch (err) {
+        console.error('Erro ao copiar link:', err);
+      }
     }
   };
 
-  const serie = series[id];
+  const handleTemporadaClick = (temporada) => {
+    setSelectedSeason(temporada);
+    setSelectedEpisode(1);
+  };
+
+  const handleEpisodioClick = (episodio) => {
+    setSelectedEpisode(episodio);
+  };
+
+  const fetchSerie = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('series')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setSerie(data);
+    } catch (error) {
+      console.error('Erro ao buscar série:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTemporadas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('temporadas')
+        .select('*')
+        .eq('serie_id', serie.id)
+        .order('numero');
+
+      if (error) throw error;
+      setTemporadas(data || []);
+      if (data && data.length > 0) {
+        setSelectedSeason(data[0].numero);
+        setExpandedSeasons([data[0].numero]);
+        // Buscar episódios da primeira temporada imediatamente
+        const { data: episodiosData, error: episodiosError } = await supabase
+          .from('episodios')
+          .select('*')
+          .eq('temporada_id', data[0].id)
+          .order('numero', { ascending: true });
+
+        if (!episodiosError && episodiosData) {
+          setEpisodios(episodiosData);
+          if (episodiosData.length > 0) {
+            setSelectedEpisode(episodiosData[0].numero);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar temporadas:', error);
+    }
+  };
+
+  const fetchEpisodios = async () => {
+    try {
+      const temporadaAtual = temporadas.find(t => t.numero === selectedSeason);
+      if (!temporadaAtual) return;
+
+      const { data, error } = await supabase
+        .from('episodios')
+        .select('*')
+        .eq('temporada_id', temporadaAtual.id)
+        .order('numero', { ascending: true });
+
+      if (error) throw error;
+      setEpisodios(data || []);
+      if (data && data.length > 0) {
+        setSelectedEpisode(data[0].numero);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar episódios:', error);
+    }
+  };
+
+  const fetchVideo = async () => {
+    try {
+      setLoadingVideo(true);
+      const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
+      
+      const response = await fetch(`http://localhost:3002/api/video/${videoId}`);
+      const data = await response.json();
+
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+      } else {
+        setVideoUrl(null);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar vídeo:', error);
+      setVideoUrl(null);
+    } finally {
+      setLoadingVideo(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <span className="loading-text">Carregando</span>
+      </div>
+    );
+  }
 
   if (!serie) {
     return (
@@ -63,10 +200,6 @@ const DetalhesSerie = () => {
               <span className="detalhes-ano">{serie.ano}</span>
               <span className="detalhes-avaliacao">★ {serie.avaliacao}</span>
             </div>
-            <div className="detalhes-temporadas">
-              <span>{serie.temporadas} temporadas</span>
-              <span>{serie.episodios} episódios</span>
-            </div>
           </div>
         </div>
 
@@ -74,14 +207,59 @@ const DetalhesSerie = () => {
           <p>{serie.sinopse}</p>
         </div>
 
-        <div className="player-container">
-          <div className="player-placeholder">
-            <span>Player de Vídeo</span>
+        <div className="temporada-selector">
+          <label>Temporada:</label>
+          <div className="temporada-pills">
+            {temporadas.map((temporada) => (
+              <button 
+                key={temporada.id}
+                className={`temporada-pill ${selectedSeason === temporada.numero ? 'active' : ''}`}
+                onClick={() => handleTemporadaClick(temporada.numero)}
+              >
+                {temporada.numero}
+              </button>
+            ))}
           </div>
         </div>
 
+        {episodios.length > 0 && (
+          <div className="episodio-selector">
+            <div className="episodio-pills">
+              {episodios.map((episodio) => (
+                <button
+                  key={episodio.id}
+                  className={`episodio-pill ${selectedEpisode === episodio.numero ? 'active' : ''}`}
+                  onClick={() => handleEpisodioClick(episodio.numero)}
+                >
+                  EP{episodio.numero}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="player-container">
+          {loadingVideo ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <span className="loading-text">Carregando vídeo</span>
+            </div>
+          ) : videoUrl ? (
+            <iframe
+              src={videoUrl}
+              className="video-player"
+              allowFullScreen
+              frameBorder="0"
+            />
+          ) : (
+            <div className="player-placeholder">
+              <span>Vídeo não disponível</span>
+            </div>
+          )}
+        </div>
+
         <button className="download-button" onClick={handleDownload}>
-          Baixar agora
+          {showCopiedMessage ? "Link copiado" : "Baixar agora"}
         </button>
       </div>
     </div>

@@ -16,8 +16,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "server": "node server/server.js",
-    "dev": "concurrently \"npm run start\" \"npm run server\"",
+    "start:movies": "node server/server.js",
+    "start:series": "cd server && npm start",
+    "dev": "concurrently \"npm run start\" \"npm run start:movies\" \"npm run start:series\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

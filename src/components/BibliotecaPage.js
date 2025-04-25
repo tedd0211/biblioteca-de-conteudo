@@ -9,6 +9,7 @@ const BibliotecaPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('filme');
   const [filmes, setFilmes] = useState([]);
+  const [series, setSeries] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -51,9 +52,35 @@ const BibliotecaPage = () => {
     }
   };
 
+  const fetchSeries = async () => {
+    try {
+      setLoading(true);
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, count, error } = await supabase
+        .from('series')
+        .select('id, titulo, ano, nota_media, capa, bunny')
+        .eq('bunny', true)
+        .order('data_criacao', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      setSeries(data || []);
+      setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+    } catch (error) {
+      console.error('Erro ao buscar séries:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedCategory === 'filme') {
       fetchFilmes();
+    } else {
+      fetchSeries();
     }
   }, [currentPage, selectedCategory]);
 
@@ -69,9 +96,9 @@ const BibliotecaPage = () => {
     }
   };
 
-  const conteudosFiltrados = filmes.filter(filme => 
-    filme.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const conteudosFiltrados = selectedCategory === 'filme'
+    ? filmes.filter(filme => filme.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    : series.filter(serie => serie.titulo.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="biblioteca-container">
@@ -106,23 +133,34 @@ const BibliotecaPage = () => {
 
       {loading ? (
         <div className="loading-container">
-          <span>Carregando...</span>
+          <div className="loading-spinner" />
+          <span className="loading-text">Carregando</span>
         </div>
       ) : (
         <>
           <div className="content-list">
-            {conteudosFiltrados.map(filme => (
-              <div key={filme.id} className="content-item">
-                <img src={filme.cover_url} alt={filme.title} className="content-cover" />
+            {conteudosFiltrados.map(item => (
+              <div key={item.id} className="content-item">
+                <img 
+                  src={selectedCategory === 'filme' ? item.cover_url : item.capa} 
+                  alt={selectedCategory === 'filme' ? item.title : item.titulo} 
+                  className="content-cover" 
+                />
                 <div className="content-info">
-                  <h2 className="content-title">{filme.title}</h2>
+                  <h2 className="content-title">
+                    {selectedCategory === 'filme' ? item.title : item.titulo}
+                  </h2>
                   <div className="content-details">
-                    <span className="content-year">{filme.release_year}</span>
-                    <span className="content-rating">★ {filme.vote_average}</span>
+                    <span className="content-year">
+                      {selectedCategory === 'filme' ? item.release_year : item.ano}
+                    </span>
+                    <span className="content-rating">
+                      ★ {selectedCategory === 'filme' ? item.vote_average : item.nota_media}
+                    </span>
                   </div>
                   <button 
                     className="ver-button"
-                    onClick={() => handleVerClick(filme.id, 'filme')}
+                    onClick={() => handleVerClick(item.id, selectedCategory)}
                   >
                     Ver
                   </button>
