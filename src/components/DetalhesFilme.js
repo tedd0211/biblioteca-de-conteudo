@@ -43,13 +43,17 @@ const DetalhesFilme = () => {
       const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
 
-      console.log('Resposta do servidor:', data); // Log para debug
+      console.log('Resposta do servidor:', data);
 
       if (data.url) {
-        // Garantir que a URL use HTTPS
-        const secureUrl = data.url.replace('http://', 'https://');
-        console.log('URL do vídeo:', secureUrl); // Log para debug
-        setVideoUrl(secureUrl);
+        // Extrair o GUID e library ID da URL do iframe
+        const urlParts = data.url.split('/');
+        const guid = urlParts.pop();
+        const libraryId = urlParts.pop();
+        // Construir a URL direta do vídeo
+        const directUrl = `https://video.bunnycdn.com/play/${libraryId}/${guid}`;
+        console.log('URL do vídeo:', directUrl);
+        setVideoUrl(directUrl);
       } else {
         setVideoUrl(null);
       }
@@ -156,14 +160,15 @@ const DetalhesFilme = () => {
               <span className="loading-text">Carregando vídeo</span>
             </div>
           ) : videoUrl ? (
-            <iframe
-              src={videoUrl}
-              title={`Player de vídeo - ${filme.title}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+            <video
+              controls
+              playsInline
               className="video-player"
-              sandbox="allow-same-origin allow-scripts allow-forms"
-            />
+              poster={filme.cover_url}
+            >
+              <source src={videoUrl} type="video/mp4" />
+              Seu navegador não suporta a reprodução de vídeos.
+            </video>
           ) : (
             <div className="player-placeholder">
               <span>Vídeo não disponível no momento</span>
@@ -172,13 +177,8 @@ const DetalhesFilme = () => {
         </div>
 
         <button className="download-button" onClick={handleDownload}>
-          Baixar agora
+          {showCopiedMessage ? "Link copiado" : "Baixar agora"}
         </button>
-        {showCopiedMessage && (
-          <div className="copied-message">
-            Link copiado!
-          </div>
-        )}
       </div>
     </div>
   );
