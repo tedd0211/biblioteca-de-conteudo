@@ -8,6 +8,66 @@ const API_URL = process.env.NODE_ENV === 'production'
   ? 'https://biblioteca-conteudo-series.vercel.app'  // URL do servidor de séries em produção
   : 'http://localhost:3002'; // URL local
 
+// Funções para suporte ao Fairplay
+async function loadFpCertificate(libraryId) {
+  try {
+    const response = await fetch(`https://video.bunnycdn.com/FairPlay/${libraryId}/certificate`);
+    return await response.arrayBuffer();
+  } catch(e) {
+    console.error('Erro ao carregar certificado:', e);
+    return null;
+  }
+}
+
+async function getResponse(event, licenseServerUrl) {
+  const spcString = btoa(String.fromCharCode.apply(null, new Uint8Array(event.message)));
+  const licenseResponse = await fetch(licenseServerUrl, {
+    method: 'POST',
+    headers: new Headers({'Content-type': 'application/json'}),
+    body: JSON.stringify({ "spc": spcString }),
+  });
+  const responseObject = await licenseResponse.json();
+  return Uint8Array.from(atob(responseObject.ckc), c => c.charCodeAt(0));
+}
+
+async function onFpEncrypted(event, video, certificate, licenseServerUrl) {
+  try {
+    const initDataType = event.initDataType;
+    if (initDataType !== 'skd') {
+      console.error(`Tipo de dados de inicialização inesperado: "${initDataType}"`);
+      return;
+    }
+    
+    if (!video.mediaKeys) {
+      const access = await navigator.requestMediaKeySystemAccess("com.apple.fps", [{
+        initDataTypes: [initDataType],
+        videoCapabilities: [{ contentType: 'application/vnd.apple.mpegurl', robustness: '' }],
+        distinctiveIdentifier: 'not-allowed',
+        persistentState: 'not-allowed',
+        sessionTypes: ['temporary'],
+      }]);
+
+      const keys = await access.createMediaKeys();
+      await keys.setServerCertificate(certificate);
+      await video.setMediaKeys(keys);
+    }
+
+    const initData = event.initData;
+    const session = video.mediaKeys.createSession();
+    session.generateRequest(initDataType, initData);
+    
+    const message = await new Promise(resolve => {
+      session.addEventListener('message', resolve, { once: true });
+    });
+
+    const response = await getResponse(message, licenseServerUrl);
+    await session.update(response);
+    return session;
+  } catch(e) {
+    console.error('Erro na reprodução criptografada:', e);
+  }
+}
+
 const DetalhesSerie = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -160,6 +220,68 @@ const DetalhesSerie = () => {
     }
   };
 
+  const setupDrmPlayer = async (videoElement, videoUrl, videoId) => {
+    if (!videoElement || !videoUrl || !videoId) return;
+
+    const libraryId = process.env.REACT_APP_BUNNY_LIBRARY_ID_SERIES;
+    
+    // Setup para Safari (Fairplay)
+    if (navigator.vendor.includes('Apple')) {
+      const certificate = await loadFpCertificate(libraryId);
+      if (certificate) {
+        videoElement.addEventListener('encrypted', (event) => 
+          onFpEncrypted(
+            event, 
+            videoElement, 
+            certificate, 
+            `https://video.bunnycdn.com/FairPlay/${libraryId}/license/?videoId=${videoId}`
+          )
+        );
+      }
+    } 
+    // Setup para outros navegadores (Widevine)
+    else {
+      try {
+        const access = await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{
+          initDataTypes: ['cenc'],
+          videoCapabilities: [
+            { contentType: 'video/mp4; codecs="avc1.42E01E"' }
+          ]
+        }]);
+        
+        const mediaKeys = await access.createMediaKeys();
+        await videoElement.setMediaKeys(mediaKeys);
+        
+        const session = mediaKeys.createSession();
+        videoElement.addEventListener('encrypted', async (event) => {
+          await session.generateRequest(event.initDataType, event.initData);
+        });
+        
+        session.addEventListener('message', async (event) => {
+          const response = await fetch(
+            `https://video.bunnycdn.com/WidevineLicense/${libraryId}/${videoId}`,
+            {
+              method: 'POST',
+              body: event.message
+            }
+          );
+          const license = await response.arrayBuffer();
+          await session.update(license);
+        });
+      } catch (error) {
+        console.error('Erro ao configurar DRM:', error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (videoUrl && serie?.imdb_id) {
+      const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
+      const videoElement = document.querySelector('.video-player');
+      setupDrmPlayer(videoElement, videoUrl, videoId);
+    }
+  }, [videoUrl, serie?.imdb_id, selectedSeason, selectedEpisode]);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -254,6 +376,7 @@ const DetalhesSerie = () => {
               preload="metadata"
               playsInline
               autoPlay
+              crossOrigin="anonymous"
             >
               <source src={videoUrl} type="application/x-mpegURL" />
               Seu navegador não suporta a reprodução de vídeos.
