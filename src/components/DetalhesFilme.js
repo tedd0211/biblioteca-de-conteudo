@@ -75,8 +75,6 @@ const DetalhesFilme = () => {
   const [loading, setLoading] = useState(true);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
-  const videoUrl = "http://srvdigital.fun:80/movie/04496565/86608214/3969229.mp4";
-
   const handleVoltar = () => {
     navigate(-1);
   };
@@ -177,18 +175,20 @@ const DetalhesFilme = () => {
           </div>
         )}
 
-        <div className="player-container">
-          <video 
-            controls 
-            className="video-player"
-            preload="metadata"
-            playsInline
-            autoPlay
-          >
-            <source src={videoUrl} type="video/mp4" />
-            Seu navegador não suporta a reprodução de vídeos.
-          </video>
-        </div>
+        {filme.url_stream && (
+          <div className="player-container">
+            <video 
+              controls 
+              className="video-player"
+              preload="metadata"
+              playsInline
+              autoPlay
+            >
+              <source src={filme.url_stream} type="video/mp4" />
+              Seu navegador não suporta a reprodução de vídeos.
+            </video>
+          </div>
+        )}
 
         <button className="download-button" onClick={handleDownload}>
           {showCopiedMessage ? "Link copiado" : "Baixar agora"}
