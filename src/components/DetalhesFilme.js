@@ -35,6 +35,32 @@ const DetalhesFilme = () => {
     }
   };
 
+  const initializePlayer = (url) => {
+    const video = document.querySelector('video');
+    if (!video) return;
+
+    // Configurar o player para iOS
+    video.src = url;
+    video.playsInline = true;
+    video.controls = true;
+    video.autoplay = false;
+
+    // Adicionar listeners para debug
+    video.addEventListener('error', (e) => {
+      console.error('Erro no player:', e);
+      console.error('Código do erro:', video.error.code);
+      console.error('Mensagem do erro:', video.error.message);
+    });
+
+    video.addEventListener('loadedmetadata', () => {
+      console.log('Metadados carregados');
+    });
+
+    video.addEventListener('canplay', () => {
+      console.log('Vídeo pode ser reproduzido');
+    });
+  };
+
   const fetchVideo = async () => {
     if (!filme?.imdb_id) return;
     
@@ -46,10 +72,11 @@ const DetalhesFilme = () => {
       console.log('Resposta do servidor:', data);
 
       if (data.url) {
-        // Trocar /embed/ por /play/ na URL
-        const playUrl = data.url.replace('/embed/', '/play/');
+        // Usar a URL direta do vídeo
+        const playUrl = data.url.replace('/embed/', '/playlist.m3u8');
         console.log('URL do vídeo:', playUrl);
         setVideoUrl(playUrl);
+        initializePlayer(playUrl);
       } else {
         setVideoUrl(null);
       }
@@ -156,14 +183,17 @@ const DetalhesFilme = () => {
               <span className="loading-text">Carregando vídeo</span>
             </div>
           ) : videoUrl ? (
-            <iframe
-              src={videoUrl}
-              title={`Player de vídeo - ${filme.title}`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+            <video
               className="video-player"
               playsInline
-            />
+              controls
+              controlsList="nodownload"
+              webkit-playsinline="true"
+              x-webkit-airplay="allow"
+            >
+              <source src={videoUrl} type="application/x-mpegURL" />
+              Seu navegador não suporta a reprodução de vídeos.
+            </video>
           ) : (
             <div className="player-placeholder">
               <span>Vídeo não disponível no momento</span>

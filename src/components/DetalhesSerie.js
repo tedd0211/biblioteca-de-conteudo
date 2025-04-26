@@ -20,6 +20,8 @@ const DetalhesSerie = () => {
   const [episodios, setEpisodios] = useState([]);
   const [videoUrl, setVideoUrl] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
+  const [temporadaSelecionada, setTemporadaSelecionada] = useState(1);
+  const [episodioSelecionado, setEpisodioSelecionado] = useState(null);
 
   const fetchSerie = async () => {
     try {
@@ -139,6 +141,32 @@ const DetalhesSerie = () => {
     }
   };
 
+  const initializePlayer = (url) => {
+    const video = document.querySelector('video');
+    if (!video) return;
+
+    // Configurar o player para iOS
+    video.src = url;
+    video.playsInline = true;
+    video.controls = true;
+    video.autoplay = false;
+
+    // Adicionar listeners para debug
+    video.addEventListener('error', (e) => {
+      console.error('Erro no player:', e);
+      console.error('Código do erro:', video.error.code);
+      console.error('Mensagem do erro:', video.error.message);
+    });
+
+    video.addEventListener('loadedmetadata', () => {
+      console.log('Metadados carregados');
+    });
+
+    video.addEventListener('canplay', () => {
+      console.log('Vídeo pode ser reproduzido');
+    });
+  };
+
   const fetchVideo = async () => {
     try {
       setLoadingVideo(true);
@@ -148,8 +176,9 @@ const DetalhesSerie = () => {
       const data = await response.json();
 
       if (data.videoUrl) {
-        const playUrl = data.videoUrl.replace('/embed/', '/play/');
+        const playUrl = data.videoUrl.replace('/embed/', '/playlist.m3u8');
         setVideoUrl(playUrl);
+        initializePlayer(playUrl);
       } else {
         setVideoUrl(null);
       }
@@ -187,87 +216,89 @@ const DetalhesSerie = () => {
   }
 
   return (
-    <div className="detalhes-container">
-      <div className="detalhes-header">
-        <button className="voltar-button" onClick={handleVoltar}>
-          ‹
-        </button>
-        <h1 className="header-title">Biblioteca <span>Viper</span></h1>
-      </div>
-
-      <div className="detalhes-content">
-        <div className="detalhes-item">
-          <img src={serie.capa} alt={serie.titulo} className="detalhes-capa" />
-          <div className="detalhes-info">
-            <h2 className="detalhes-titulo">{serie.titulo}</h2>
-            <div className="detalhes-meta">
-              <span className="detalhes-ano">{serie.ano}</span>
-              <span className="detalhes-avaliacao">★ {serie.avaliacao}</span>
+    <div className="detalhes-serie">
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <span className="loading-text">Carregando</span>
+        </div>
+      ) : (
+        <>
+          <div className="serie-info">
+            <h1>{serie.Title}</h1>
+            <p>{serie.Plot}</p>
+            <div className="info-adicional">
+              <span>Ano: {serie.Year}</span>
+              <span>Gênero: {serie.Genre}</span>
+              <span>Duração: {serie.Runtime}</span>
+              <span>Avaliação: {serie.imdbRating}</span>
             </div>
           </div>
-        </div>
 
-        <div className="detalhes-sinopse">
-          <p>{serie.sinopse}</p>
-        </div>
-
-        <div className="temporada-selector">
-          <label>Temporada:</label>
-          <div className="temporada-pills">
-            {temporadas.map((temporada) => (
-              <button 
-                key={temporada.id}
-                className={`temporada-pill ${selectedSeason === temporada.numero ? 'active' : ''}`}
-                onClick={() => handleTemporadaClick(temporada.numero)}
-              >
-                {temporada.numero}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {episodios.length > 0 && (
-          <div className="episodio-selector">
-            <div className="episodio-pills">
-              {episodios.map((episodio) => (
-                <button
-                  key={episodio.id}
-                  className={`episodio-pill ${selectedEpisode === episodio.numero ? 'active' : ''}`}
-                  onClick={() => handleEpisodioClick(episodio.numero)}
-                >
-                  EP{episodio.numero}
-                </button>
+          <div className="temporadas">
+            <h2>Temporadas</h2>
+            <select 
+              value={temporadaSelecionada} 
+              onChange={(e) => setTemporadaSelecionada(e.target.value)}
+              className="select-temporada"
+            >
+              {temporadas.map((temp) => (
+                <option key={temp} value={temp}>
+                  Temporada {temp}
+                </option>
               ))}
+            </select>
+          </div>
+
+          <div className="episodios">
+            <h3>Episódios</h3>
+            <div className="lista-episodios">
+              {episodios
+                .filter((ep) => ep.Season === temporadaSelecionada)
+                .map((episodio) => (
+                  <div 
+                    key={episodio.Episode} 
+                    className={`episodio-card ${episodioSelecionado?.Episode === episodio.Episode ? 'selecionado' : ''}`}
+                    onClick={() => handleEpisodioClick(episodio)}
+                  >
+                    <div className="episodio-info">
+                      <span className="episodio-numero">Episódio {episodio.Episode}</span>
+                      <h4 className="episodio-titulo">{episodio.Title}</h4>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
-        )}
 
-        <div className="player-container">
-          {loadingVideo ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <span className="loading-text">Carregando vídeo</span>
-            </div>
-          ) : videoUrl ? (
-            <iframe
-              src={videoUrl}
-              className="video-player"
-              allowFullScreen
-              frameBorder="0"
-              title={`${serie.titulo} - Temporada ${selectedSeason} Episódio ${selectedEpisode}`}
-              playsInline
-            />
-          ) : (
-            <div className="player-placeholder">
-              <span>Vídeo não disponível</span>
+          {episodioSelecionado && (
+            <div className="player-section">
+              <h3>Assistindo: Episódio {episodioSelecionado.Episode} - {episodioSelecionado.Title}</h3>
+              <div className="player-container">
+                {loadingVideo ? (
+                  <div className="player-placeholder">
+                    <div className="loading-spinner"></div>
+                  </div>
+                ) : videoUrl ? (
+                  <video
+                    className="video-player"
+                    controls
+                    playsInline
+                    controlsList="nodownload"
+                    onError={(e) => console.error('Erro no player:', e)}
+                  >
+                    <source src={videoUrl} type="application/x-mpegURL" />
+                    Seu navegador não suporta o player de vídeo.
+                  </video>
+                ) : (
+                  <div className="player-placeholder">
+                    Selecione um episódio para assistir
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
-
-        <button className="download-button" onClick={handleDownload}>
-          {showCopiedMessage ? "Link copiado" : "Baixar agora"}
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 };
