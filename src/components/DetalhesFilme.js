@@ -36,13 +36,15 @@ const DetalhesFilme = () => {
   };
 
   const fetchVideo = async () => {
+    if (!filme?.imdb_id) return;
+    
     try {
       setLoadingVideo(true);
       const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
 
-      if (data.videoUrl) {
-        setVideoUrl(data.videoUrl);
+      if (data.url) {
+        setVideoUrl(data.url);
       } else {
         setVideoUrl(null);
       }
@@ -66,10 +68,6 @@ const DetalhesFilme = () => {
 
         if (error) throw error;
         setFilme(data);
-
-        if (data.imdb_id) {
-          await fetchVideo();
-        }
       } catch (error) {
         console.error('Erro ao buscar filme:', error);
       } finally {
@@ -79,6 +77,12 @@ const DetalhesFilme = () => {
 
     fetchFilme();
   }, [id]);
+
+  useEffect(() => {
+    if (filme?.imdb_id) {
+      fetchVideo();
+    }
+  }, [filme]);
 
   if (loading) {
     return (
