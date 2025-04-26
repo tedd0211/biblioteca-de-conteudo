@@ -25,12 +25,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/movies/:path*",
-      "destination": "https://biblioteca-conteudo-movies.vercel.app/api/:path*"
+      "source": "/api/movies/(.*)",
+      "destination": "https://biblioteca-conteudo-movies.vercel.app/api/$1"
     },
     {
-      "source": "/api/series/:path*",
-      "destination": "https://biblioteca-conteudo-series.vercel.app/api/:path*"
+      "source": "/api/series/(.*)",
+      "destination": "https://biblioteca-conteudo-series.vercel.app/api/$1"
     }
   ]
 } 
