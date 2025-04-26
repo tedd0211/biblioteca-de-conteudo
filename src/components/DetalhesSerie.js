@@ -5,8 +5,8 @@ import './DetalhesSerie.css';
 
 // URL do servidor baseada no ambiente
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://biblioteca-conteudo-series.vercel.app'  // URL do servidor de séries em produção
-  : 'http://localhost:3002'; // URL local
+  ? 'https://biblioteca-conteudo-series.vercel.app/api'  // URL do servidor de séries em produção
+  : 'http://localhost:3002/api'; // URL local
 
 const DetalhesSerie = () => {
   const navigate = useNavigate();
@@ -144,7 +144,7 @@ const DetalhesSerie = () => {
       setLoadingVideo(true);
       const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
       
-      const response = await fetch(`${API_URL}/api/video/${videoId}`);
+      const response = await fetch(`${API_URL}/video/${videoId}`);
       const data = await response.json();
 
       if (data.videoUrl) {

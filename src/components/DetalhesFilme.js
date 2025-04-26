@@ -5,8 +5,8 @@ import './DetalhesFilme.css';
 
 // URL do servidor baseada no ambiente
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://biblioteca-conteudo-movies.vercel.app'  // URL do servidor de filmes em produção
-  : 'http://localhost:3001'; // URL local
+  ? 'https://biblioteca-conteudo-movies.vercel.app/api'  // URL do servidor de filmes em produção
+  : 'http://localhost:3001/api'; // URL local
 
 const DetalhesFilme = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const DetalhesFilme = () => {
     
     try {
       setLoadingVideo(true);
-      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
+      const response = await fetch(`${API_URL}/video/${filme.imdb_id}`);
       const data = await response.json();
 
       console.log('Resposta do servidor:', data);
