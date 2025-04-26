@@ -3,6 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import './DetalhesFilme.css';
 
+// URL do servidor baseada no ambiente
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://biblioteca-conteudo-movies.vercel.app'  // URL do servidor de filmes em produção
+  : 'http://localhost:3001'; // URL local
+
 const DetalhesFilme = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -10,6 +15,7 @@ const DetalhesFilme = () => {
   const [loading, setLoading] = useState(true);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
 
   const handleVoltar = () => {
     navigate(-1);
@@ -29,31 +35,22 @@ const DetalhesFilme = () => {
     }
   };
 
-  const buscarVideoBunny = async (imdbId) => {
+  const fetchVideo = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/video/${imdbId}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        return { 
-          error: errorData.error || 'Erro ao buscar vídeo',
-          details: errorData.details,
-          status: response.status
-        };
-      }
-      
+      setLoadingVideo(true);
+      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
-      
-      if (data.url) {
-        return { url: data.url };
+
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+      } else {
+        setVideoUrl(null);
       }
-      
-      return { error: 'Nenhum vídeo encontrado' };
     } catch (error) {
-      return { 
-        error: 'Erro ao buscar vídeo',
-        details: error.message
-      };
+      console.error('Erro ao buscar vídeo:', error);
+      setVideoUrl(null);
+    } finally {
+      setLoadingVideo(false);
     }
   };
 
@@ -71,10 +68,7 @@ const DetalhesFilme = () => {
         setFilme(data);
 
         if (data.imdb_id) {
-          const result = await buscarVideoBunny(data.imdb_id);
-          if (result.url) {
-            setVideoUrl(result.url);
-          }
+          await fetchVideo();
         }
       } catch (error) {
         console.error('Erro ao buscar filme:', error);
