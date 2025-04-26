@@ -100,7 +100,19 @@ const DetalhesFilme = () => {
     
     try {
       setLoadingVideo(true);
-      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
+      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`, {
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.url) {
