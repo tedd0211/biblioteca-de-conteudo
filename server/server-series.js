@@ -5,7 +5,17 @@ require('dotenv').config({ path: '../.env' });
 
 const app = express();
 
-app.use(cors());
+// Configuração do CORS para permitir o domínio da aplicação
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://biblioteca-de-conteudo.vercel.app',
+    'https://biblioteca-conteudo.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY_SERIES;
