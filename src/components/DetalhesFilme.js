@@ -196,7 +196,7 @@ const DetalhesFilme = () => {
             </video>
           ) : (
             <div className="player-placeholder">
-              <span>Vídeo não disponível no momento</span>
+              <span>Vídeo indisponível no momento. Por favor, tente novamente mais tarde.</span>
             </div>
           )}
         </div>

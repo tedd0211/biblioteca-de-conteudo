@@ -291,7 +291,7 @@ const DetalhesSerie = () => {
                   </video>
                 ) : (
                   <div className="player-placeholder">
-                    Selecione um episódio para assistir
+                    <span>Vídeo indisponível no momento. Por favor, tente novamente mais tarde.</span>
                   </div>
                 )}
               </div>
