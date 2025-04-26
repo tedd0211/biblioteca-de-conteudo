@@ -74,8 +74,8 @@ const DetalhesFilme = () => {
   const [filme, setFilme] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(null);
-  const [loadingVideo, setLoadingVideo] = useState(false);
+
+  const videoUrl = "http://srvdigital.fun:80/movie/04496565/86608214/3969229.mp4";
 
   const handleVoltar = () => {
     navigate(-1);
@@ -91,95 +91,6 @@ const DetalhesFilme = () => {
         }, 2000);
       } catch (error) {
         console.error('Erro ao copiar link:', error);
-      }
-    }
-  };
-
-  const fetchVideo = async () => {
-    if (!filme?.imdb_id) return;
-    
-    try {
-      setLoadingVideo(true);
-      const response = await fetch(`/api/movies/video/${filme.imdb_id}`, {
-        mode: 'cors',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Origin': window.location.origin
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Erro desconhecido'}`);
-      }
-
-      const data = await response.json();
-
-      if (data.url) {
-        setVideoUrl(data.url);
-      } else {
-        setVideoUrl(null);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar vídeo:', error);
-      setVideoUrl(null);
-    } finally {
-      setLoadingVideo(false);
-    }
-  };
-
-  const setupDrmPlayer = async (videoElement, videoUrl, imdbId) => {
-    if (!videoElement || !videoUrl || !imdbId) return;
-
-    const libraryId = process.env.REACT_APP_BUNNY_LIBRARY_ID;
-    
-    // Setup para Safari (Fairplay)
-    if (navigator.vendor.includes('Apple')) {
-      const certificate = await loadFpCertificate(libraryId);
-      if (certificate) {
-        videoElement.addEventListener('encrypted', (event) => 
-          onFpEncrypted(
-            event, 
-            videoElement, 
-            certificate, 
-            `https://video.bunnycdn.com/FairPlay/${libraryId}/license/?videoId=${imdbId}`
-          )
-        );
-      }
-    } 
-    // Setup para outros navegadores (Widevine)
-    else {
-      try {
-        const access = await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{
-          initDataTypes: ['cenc'],
-          videoCapabilities: [
-            { contentType: 'video/mp4; codecs="avc1.42E01E"' }
-          ]
-        }]);
-        
-        const mediaKeys = await access.createMediaKeys();
-        await videoElement.setMediaKeys(mediaKeys);
-        
-        const session = mediaKeys.createSession();
-        videoElement.addEventListener('encrypted', async (event) => {
-          await session.generateRequest(event.initDataType, event.initData);
-        });
-        
-        session.addEventListener('message', async (event) => {
-          const response = await fetch(
-            `https://video.bunnycdn.com/WidevineLicense/${libraryId}/${imdbId}`,
-            {
-              method: 'POST',
-              body: event.message
-            }
-          );
-          const license = await response.arrayBuffer();
-          await session.update(license);
-        });
-      } catch (error) {
-        console.error('Erro ao configurar DRM:', error);
       }
     }
   };
@@ -205,19 +116,6 @@ const DetalhesFilme = () => {
 
     fetchFilme();
   }, [id]);
-
-  useEffect(() => {
-    if (filme?.imdb_id) {
-      fetchVideo();
-    }
-  }, [filme]);
-
-  useEffect(() => {
-    if (videoUrl && filme?.imdb_id) {
-      const videoElement = document.querySelector('.video-player');
-      setupDrmPlayer(videoElement, videoUrl, filme.imdb_id);
-    }
-  }, [videoUrl, filme?.imdb_id]);
 
   if (loading) {
     return (
@@ -280,28 +178,16 @@ const DetalhesFilme = () => {
         )}
 
         <div className="player-container">
-          {loadingVideo ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <span className="loading-text">Carregando vídeo</span>
-            </div>
-          ) : videoUrl ? (
-            <video 
-              controls 
-              className="video-player"
-              preload="metadata"
-              playsInline
-              autoPlay
-              crossOrigin="anonymous"
-            >
-              <source src={videoUrl} type="application/x-mpegURL" />
-              Seu navegador não suporta a reprodução de vídeos.
-            </video>
-          ) : (
-            <div className="player-placeholder">
-              <span>Vídeo não disponível</span>
-            </div>
-          )}
+          <video 
+            controls 
+            className="video-player"
+            preload="metadata"
+            playsInline
+            autoPlay
+          >
+            <source src={videoUrl} type="video/mp4" />
+            Seu navegador não suporta a reprodução de vídeos.
+          </video>
         </div>
 
         <button className="download-button" onClick={handleDownload}>
