@@ -3,6 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import './DetalhesSerie.css';
 
+// URL do servidor baseada no ambiente
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://biblioteca-conteudo-series.vercel.app'  // URL do servidor de séries em produção
+  : 'http://localhost:3002'; // URL local
+
 const DetalhesSerie = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -139,7 +144,7 @@ const DetalhesSerie = () => {
       setLoadingVideo(true);
       const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
       
-      const response = await fetch(`http://localhost:3002/api/video/${videoId}`);
+      const response = await fetch(`${API_URL}/api/video/${videoId}`);
       const data = await response.json();
 
       if (data.videoUrl) {
