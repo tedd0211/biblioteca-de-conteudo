@@ -28,7 +28,7 @@ const BibliotecaPage = () => {
     navigate(`/${categoria}/${id}`);
   };
 
-  const fetchFilmes = async () => {
+  const fetchFilmes = React.useCallback(async () => {
     try {
       setLoading(true);
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -50,9 +50,9 @@ const BibliotecaPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
 
-  const fetchSeries = async () => {
+  const fetchSeries = React.useCallback(async () => {
     try {
       setLoading(true);
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -74,15 +74,12 @@ const BibliotecaPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
 
   useEffect(() => {
-    if (selectedCategory === 'filme') {
-      fetchFilmes();
-    } else {
-      fetchSeries();
-    }
-  }, [currentPage, selectedCategory]);
+    fetchFilmes();
+    fetchSeries();
+  }, [fetchFilmes, fetchSeries]);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {

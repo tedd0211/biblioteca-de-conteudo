@@ -9,13 +9,30 @@ const DetalhesSerie = () => {
   const [loading, setLoading] = useState(true);
   const [serie, setSerie] = useState(null);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
-  const [expandedSeasons, setExpandedSeasons] = useState([1]);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [temporadas, setTemporadas] = useState([]);
   const [episodios, setEpisodios] = useState([]);
   const [videoUrl, setVideoUrl] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
+
+  const fetchSerie = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('series')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      setSerie(data);
+    } catch (error) {
+      console.error('Erro ao buscar série:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchSerie();
@@ -65,24 +82,6 @@ const DetalhesSerie = () => {
     setSelectedEpisode(episodio);
   };
 
-  const fetchSerie = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('series')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      setSerie(data);
-    } catch (error) {
-      console.error('Erro ao buscar série:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchTemporadas = async () => {
     try {
       const { data, error } = await supabase
@@ -95,7 +94,6 @@ const DetalhesSerie = () => {
       setTemporadas(data || []);
       if (data && data.length > 0) {
         setSelectedSeason(data[0].numero);
-        setExpandedSeasons([data[0].numero]);
         // Buscar episódios da primeira temporada imediatamente
         const { data: episodiosData, error: episodiosError } = await supabase
           .from('episodios')
@@ -141,7 +139,7 @@ const DetalhesSerie = () => {
       setLoadingVideo(true);
       const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
       
-      const response = await fetch(`/api/series/video/${videoId}`);
+      const response = await fetch(`http://localhost:3002/api/video/${videoId}`);
       const data = await response.json();
 
       if (data.videoUrl) {
@@ -250,6 +248,7 @@ const DetalhesSerie = () => {
               className="video-player"
               allowFullScreen
               frameBorder="0"
+              title={`${serie.titulo} - Temporada ${selectedSeason} Episódio ${selectedEpisode}`}
             />
           ) : (
             <div className="player-placeholder">
