@@ -7,17 +7,38 @@ const app = express();
 
 // Configuração do CORS
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://biblioteca-de-conteudo.vercel.app',
-    'https://biblioteca-conteudo-movies.vercel.app'
-  ],
+  origin: function (origin, callback) {
+    // Em produção, permitir todas as origens
+    if (process.env.NODE_ENV === 'production') {
+      callback(null, true);
+    } else {
+      // Em desenvolvimento, permitir apenas localhost
+      const allowedOrigins = ['http://localhost:3000'];
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  credentials: true,
+  maxAge: 86400 // 24 horas
 };
 
 app.use(cors(corsOptions));
+
+// Adicionar headers CORS manualmente
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 app.use(express.json());
 
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY_MOVIES;
