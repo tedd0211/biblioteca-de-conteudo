@@ -35,32 +35,6 @@ const DetalhesFilme = () => {
     }
   };
 
-  const initializePlayer = (url) => {
-    const video = document.querySelector('video');
-    if (!video) return;
-
-    // Configurar o player para iOS
-    video.src = url;
-    video.playsInline = true;
-    video.controls = true;
-    video.autoplay = false;
-
-    // Adicionar listeners para debug
-    video.addEventListener('error', (e) => {
-      console.error('Erro no player:', e);
-      console.error('Código do erro:', video.error.code);
-      console.error('Mensagem do erro:', video.error.message);
-    });
-
-    video.addEventListener('loadedmetadata', () => {
-      console.log('Metadados carregados');
-    });
-
-    video.addEventListener('canplay', () => {
-      console.log('Vídeo pode ser reproduzido');
-    });
-  };
-
   const fetchVideo = async () => {
     if (!filme?.imdb_id) return;
     
@@ -69,14 +43,8 @@ const DetalhesFilme = () => {
       const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
 
-      console.log('Resposta do servidor:', data);
-
       if (data.url) {
-        // Usar a URL direta do vídeo
-        const playUrl = data.url.replace('/embed/', '/playlist.m3u8');
-        console.log('URL do vídeo:', playUrl);
-        setVideoUrl(playUrl);
-        initializePlayer(playUrl);
+        setVideoUrl(data.url);
       } else {
         setVideoUrl(null);
       }
@@ -183,32 +151,26 @@ const DetalhesFilme = () => {
               <span className="loading-text">Carregando vídeo</span>
             </div>
           ) : videoUrl ? (
-            <video
+            <video 
+              controls 
               className="video-player"
+              preload="metadata"
               playsInline
-              controls
-              controlsList="nodownload"
-              webkit-playsinline="true"
-              x-webkit-airplay="allow"
+              autoPlay
             >
               <source src={videoUrl} type="application/x-mpegURL" />
               Seu navegador não suporta a reprodução de vídeos.
             </video>
           ) : (
             <div className="player-placeholder">
-              <span>Vídeo indisponível no momento. Por favor, tente novamente mais tarde.</span>
+              <span>Vídeo não disponível</span>
             </div>
           )}
         </div>
 
         <button className="download-button" onClick={handleDownload}>
-          Baixar agora
+          {showCopiedMessage ? "Link copiado" : "Baixar agora"}
         </button>
-        {showCopiedMessage && (
-          <div className="copied-message">
-            Link copiado!
-          </div>
-        )}
       </div>
     </div>
   );
