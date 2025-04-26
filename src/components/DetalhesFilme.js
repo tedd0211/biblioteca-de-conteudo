@@ -100,7 +100,7 @@ const DetalhesFilme = () => {
     
     try {
       setLoadingVideo(true);
-      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`, {
+      const response = await fetch(`/api/movies/video/${filme.imdb_id}`, {
         mode: 'cors',
         credentials: 'include',
         headers: {
