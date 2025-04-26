@@ -141,7 +141,7 @@ const DetalhesSerie = () => {
       setLoadingVideo(true);
       const videoId = `${serie.imdb_id}-${selectedSeason}-${selectedEpisode}`;
       
-      const response = await fetch(`http://localhost:3002/api/video/${videoId}`);
+      const response = await fetch(`/api/series/video/${videoId}`);
       const data = await response.json();
 
       if (data.videoUrl) {

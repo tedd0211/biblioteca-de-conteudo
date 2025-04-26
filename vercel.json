@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "server/server-series.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/video/(.*)",
+      "dest": "server/server.js"
+    },
+    {
+      "src": "/api/series/video/(.*)",
+      "dest": "server/server-series.js"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/(.+)",
+      "dest": "/index.html"
+    }
+  ]
+} 

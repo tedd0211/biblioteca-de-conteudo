@@ -22,7 +22,7 @@ console.log('Iniciando servidor de séries com:');
 console.log('Library ID (Series):', BUNNY_LIBRARY_ID);
 console.log('API Key (Series):', BUNNY_API_KEY.substring(0, 8) + '...');
 
-app.get('/api/video/:videoId', async (req, res) => {
+app.get('/api/series/video/:videoId', async (req, res) => {
   try {
     const videoId = req.params.videoId;
     
