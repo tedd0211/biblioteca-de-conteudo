@@ -5,8 +5,8 @@ import './DetalhesFilme.css';
 
 // URL do servidor baseada no ambiente
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://biblioteca-conteudo-movies.vercel.app/api'  // URL do servidor de filmes em produção
-  : 'http://localhost:3001/api'; // URL local
+  ? 'https://biblioteca-conteudo-movies.vercel.app'  // URL do servidor de filmes em produção
+  : 'http://localhost:3001'; // URL local
 
 const DetalhesFilme = () => {
   const navigate = useNavigate();
@@ -40,20 +40,16 @@ const DetalhesFilme = () => {
     
     try {
       setLoadingVideo(true);
-      const response = await fetch(`${API_URL}/video/${filme.imdb_id}`);
+      const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
 
       console.log('Resposta do servidor:', data);
 
       if (data.url) {
-        // Extrair o GUID e library ID da URL do iframe
-        const urlParts = data.url.split('/');
-        const guid = urlParts.pop();
-        const libraryId = urlParts.pop();
-        // Construir a URL direta do vídeo
-        const directUrl = `https://video.bunnycdn.com/play/${libraryId}/${guid}`;
-        console.log('URL do vídeo:', directUrl);
-        setVideoUrl(directUrl);
+        // Trocar /embed/ por /play/ na URL
+        const playUrl = data.url.replace('/embed/', '/play/');
+        console.log('URL do vídeo:', playUrl);
+        setVideoUrl(playUrl);
       } else {
         setVideoUrl(null);
       }
@@ -160,15 +156,14 @@ const DetalhesFilme = () => {
               <span className="loading-text">Carregando vídeo</span>
             </div>
           ) : videoUrl ? (
-            <video
-              controls
-              playsInline
+            <iframe
+              src={videoUrl}
+              title={`Player de vídeo - ${filme.title}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
               className="video-player"
-              poster={filme.cover_url}
-            >
-              <source src={videoUrl} type="video/mp4" />
-              Seu navegador não suporta a reprodução de vídeos.
-            </video>
+              playsInline
+            />
           ) : (
             <div className="player-placeholder">
               <span>Vídeo não disponível no momento</span>
@@ -177,8 +172,13 @@ const DetalhesFilme = () => {
         </div>
 
         <button className="download-button" onClick={handleDownload}>
-          {showCopiedMessage ? "Link copiado" : "Baixar agora"}
+          Baixar agora
         </button>
+        {showCopiedMessage && (
+          <div className="copied-message">
+            Link copiado!
+          </div>
+        )}
       </div>
     </div>
   );
