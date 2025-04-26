@@ -43,8 +43,13 @@ const DetalhesFilme = () => {
       const response = await fetch(`${API_URL}/api/video/${filme.imdb_id}`);
       const data = await response.json();
 
+      console.log('Resposta do servidor:', data); // Log para debug
+
       if (data.url) {
-        setVideoUrl(data.url);
+        // Garantir que a URL use HTTPS
+        const secureUrl = data.url.replace('http://', 'https://');
+        console.log('URL do vídeo:', secureUrl); // Log para debug
+        setVideoUrl(secureUrl);
       } else {
         setVideoUrl(null);
       }
@@ -145,13 +150,19 @@ const DetalhesFilme = () => {
         )}
 
         <div className="player-container">
-          {videoUrl ? (
+          {loadingVideo ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <span className="loading-text">Carregando vídeo</span>
+            </div>
+          ) : videoUrl ? (
             <iframe
               src={videoUrl}
               title={`Player de vídeo - ${filme.title}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="video-player"
+              sandbox="allow-same-origin allow-scripts allow-forms"
             />
           ) : (
             <div className="player-placeholder">
